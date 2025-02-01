@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TGFC ban troll
 // @namespace    http://club.tgfcer.com/20060602
-// @version      0.90
+// @version      0.91
 // @license      MIT
 // @description  让讨厌的苍蝇走开！屏蔽指定用户的主帖和回帖，感谢原作者 taxidriver、jun4rui、20060602
 // @author       popyoung
@@ -16,7 +16,7 @@
 // ==/UserScript==
 
 //  console.log('Hello Tgfcer from "tgfc-ban-troll.js".');
-
+"use strict";
 //	global datas for storage
 var BanList, BanListArray, ShowBanTip, BanTip, BanNegJisao, JisaoMin, BanQuote;
 var CookieName = "TgfcBanTrollData";
@@ -28,10 +28,10 @@ var UpDownTitle = "相同用户名的数据，可跨设备、浏览器、域名�
 var MagicVersion = "0.90";
 
 function getBanArrayReasonPart(text) {
-    if (text.includes(':')) {
-        return " 理由："+text.split(':')[1];
-    }
-    return "";
+  if (text.includes(':')) {
+    return " 理由：" + text.split(':')[1];
+  }
+  return "";
 }
 
 // console.log('The Begin of logic.');
@@ -50,24 +50,24 @@ function main() {
   }
 }
 
-function supportGMv4(){
+function supportGMv4() {
   var nonSupportBrowsers = ["Via"];
   var handler = GM_info.scriptHandler;
-  if (nonSupportBrowsers.includes(handler)){
+  if (nonSupportBrowsers.includes(handler)) {
     return false;
   }
   return true;
 }
 
-function version(){
-  if(supportGMv4()){
+function version() {
+  if (supportGMv4()) {
     return GM_info.script.version;
   }
   return MagicVersion;
 }
 
-function getXHR(){
-  if(supportGMv4()){
+function getXHR() {
+  if (supportGMv4()) {
     return GM.xmlHttpRequest;
   }
   return null;//GM_xmlhttpRequest;
@@ -133,15 +133,15 @@ function getLocalStorage(name, defaultValue) {
 
 function postLoad() {
   BanListArray = BanList.split(',');
-//   //把banListArray内容中:后的部分提取出来变为新的字符串banReasonArray
-//   var BanReasonArray = [];
-//   for (var i = 0; i < BanListArray.length; i++) {
-//     var idx = BanListArray[i].indexOf(':');
-//     if (idx !== -1) {
-//       BanReasonArray.push(BanListArray[i].substring(idx + 1));
-//       BanListArray[i] = BanListArray[i].substring(0, idx);
-//     }
-//   }
+  //   //把banListArray内容中:后的部分提取出来变为新的字符串banReasonArray
+  //   var BanReasonArray = [];
+  //   for (var i = 0; i < BanListArray.length; i++) {
+  //     var idx = BanListArray[i].indexOf(':');
+  //     if (idx !== -1) {
+  //       BanReasonArray.push(BanListArray[i].substring(idx + 1));
+  //       BanListArray[i] = BanListArray[i].substring(0, idx);
+  //     }
+  //   }
   JisaoMin = parseInt(localStorage.JisaoMin);
   var idxEmpty = BanListArray.indexOf('');
   if (idxEmpty !== -1) {
@@ -245,11 +245,16 @@ function instanceEditBanList(funcEdit) {
 
 function removeFromBanList(username) {
   instanceEditBanList(function () {
-    while (true) {
-      var idx = BanListArray.split(':')[0].indexOf(username);
-      if (idx === -1) break;
-      BanListArray.splice(idx, 1);
-    }
+    BanListArray = BanListArray.filter((element) => {
+      // 先确保元素是字符串
+      if (typeof element === 'string') {
+        const parts = element.split(':');
+        // 若分割后的第一部分不等于指定的 username，则保留该元素
+        let r = parts[0] !== username;
+        return r;
+      }
+      return true;
+    });
   });
   location.reload();
 }
@@ -258,11 +263,14 @@ function addToBanList(nameAndReason) {
   // console.log("gonna remove username:" + username);
   // console.log(BanListArray);
   instanceEditBanList(function () {
-    var idx = BanListArray.split(':')[0].indexOf(nameAndReason.split(':')[0]);
-    if (idx !== -1) return;
+    for (const element of BanListArray) {
+      // 直接分割原有元素获取前半部分作为键
+      if (element.split(':')[0] === nameAndReason.split(':')[0]) {
+        return;
+      }
+    }
     BanListArray.push(nameAndReason);
   });
-  // console.log(BanListArray);
   location.reload();
 }
 
@@ -303,10 +311,10 @@ function processWap() {
       saveAndClose();
     }
   });
-  function saveAndClose(){
-      $('#tgbs').css({ 'display': 'none' });
-      // 保存数据到localStorage
-      savePanelData();
+  function saveAndClose() {
+    $('#tgbs').css({ 'display': 'none' });
+    // 保存数据到localStorage
+    savePanelData();
   }
   // save panel data
   function savePanelData() {
@@ -327,7 +335,7 @@ function processWap() {
   //在原生导航栏下面加入设置表单
   //$('div.navbar')
   hookPoint.append('<div id="tgbs" class="list_item_top" style="z-index:999;color:#f0f0f0;border-radius:.25em;width:356px;padding:.25em;position:fixed; display:none; overflow:hidden;box-shadow: rgb(51, 51, 51) 1px 1px 19px;background-color: #436193;">' +
-    '<div style="vertical-align:bottom;">'+
+    '<div style="vertical-align:bottom;">' +
     '<p style="float:left;margin-top:6px;">屏蔽ID列表:</p>' +
     '<p style="float:right;padding-bottom:2px;"><button id="save-close" style="margin-right:0;">Save & Close</button></p>' +
     '</div>' + '<div style="clear: both;"></div>' +
@@ -386,9 +394,9 @@ function processWap() {
   }
 
   var btnRemove = document.getElementById("erase");
-  btnRemove.onclick = function(e){
+  btnRemove.onclick = function (e) {
     e.preventDefault();
-    eraseFromCloud((json)=>{});
+    eraseFromCloud((json) => { });
   }
 
   //列表页面
@@ -401,17 +409,14 @@ function processWap() {
     //console.log('当前在列表页面');
     $('.dTitle').each(function () {
       var author = $(this).find('span.author').text();
-      for (var i in BanListArray) {
+      for (let ele of BanListArray) {
         //判断发帖人是否在屏蔽列表中
-        if (author.indexOf(BanListArray[i].split(':')[0]) == 1) {
-          //console.log(BanListArray[i]);
+        if (author.indexOf(ele.split(':')[0]) == 1) {
           if (!ShowBanTip) {
             $(this).css({ display: 'none' });
             continue;
           }
-          //console.log(author.indexOf(BanListArray[i]),BanListArray[i]);
-          // $(this).addClass('list-ban-section');
-          $(this).prepend('<div style="width:auto;text-align:center;border:1px dashed #AAAAAA;color:#AAAAAA; line-height:19px;"><a class="list-ban-section" href="#">查看标题</a> <strong><s> ' + BanListArray[i].split(':')[0] + ' </s></strong>' + getBanArrayReasonPart(BanListArray[i]) + ' <a class="remove-ban" href="#" value="' + BanListArray[i] + '">不再屏蔽</a>' + '</div>');
+          $(this).prepend('<div style="width:auto;text-align:center;border:1px dashed #AAAAAA;color:#AAAAAA; line-height:19px;"><a class="list-ban-section" href="#">查看标题</a> <strong><s> ' + ele.split(':')[0] + ' </s></strong>' + getBanArrayReasonPart(ele) + ' <a class="remove-ban" href="#" value="' + ele + '">不再屏蔽</a>' + '</div>');
           $(this).css({ 'height': '21px', 'overflow': 'hidden' });
         }
       }
@@ -453,12 +458,11 @@ function processWap() {
     }
     $('.infobar').each(function () {
       var author = $(this).find('a').eq(1).text();
-      for (var i in BanListArray) {
+      for (let ele of BanListArray) {
         //判断发帖人是否在屏蔽列表中
-        if (author == BanListArray[i].split(':')[0]) {
-          // console.log(author.indexOf(BanListArray[i]), BanListArray[i]);
+        if (author == ele.split(':')[0]) {
           if (ShowBanTip) {
-            $(this).before('<div style="width:auto;text-align:center;border:1px dashed #BCBCBC;color:#BCBCBC; line-height:19px;"><a class="info-ban-section" href="#">查看内容</a> <strong><s>' + author + '</s></strong>' + getBanArrayReasonPart(BanListArray[i]) + ' <a class="remove-ban" href="#" value="' + author + '">不再屏蔽</a>' + '</div>');
+            $(this).before('<div style="width:auto;text-align:center;border:1px dashed #BCBCBC;color:#BCBCBC; line-height:19px;"><a class="info-ban-section" href="#">查看内容</a> <strong><s>' + author + '</s></strong>' + getBanArrayReasonPart(ele) + ' <a class="remove-ban" href="#" value="' + author + '">不再屏蔽</a>' + '</div>');
           }
           //依次连续隐藏5个（含自己）元素
           setDisplay($(this), 'none');
@@ -526,13 +530,13 @@ function processWeb() {
     }
   };
 
-  function saveAndClose(){
-      floatDiv.style.display = 'none';
-      saveData(banlistTextarea.value, showCheckbox.checked, banTip.value, banNegJisaoCheckbox.checked, jisaoMin.value, banQuote.checked);
+  function saveAndClose() {
+    floatDiv.style.display = 'none';
+    saveData(banlistTextarea.value, showCheckbox.checked, banTip.value, banNegJisaoCheckbox.checked, jisaoMin.value, banQuote.checked);
   }
 
   var btnSaveAndClose = document.getElementById('save-close');
-  btnSaveAndClose.onclick = function(e){
+  btnSaveAndClose.onclick = function (e) {
     e.preventDefault();
     saveAndClose();
   }
@@ -945,10 +949,10 @@ function banReason(node, cite, author) {
 
   author = cite[0].getElementsByTagName('a')[0].innerHTML;
   //遍历BanListArray，判断元素中前半部分是否包含该用户
-  for (var i in BanListArray) {
+  for (var ele of BanListArray) {
     //console.log(BanListArray[i]);
-    if (String(BanListArray[i]).split(':')[0] == author) {
-      return getBanArrayReasonPart(BanListArray[i]);
+    if (ele.split(':')[0] == author) {
+      return getBanArrayReasonPart(ele);
     }
   }
 
@@ -1103,11 +1107,11 @@ function filterQuote(banListArray, nodeFunc, bqFunc, tipFunc) {
         return readA;
       }
 
-    //   function crerateTip(a, r) {
-    //     var span = document.createElement('span');
-    //     span.innerHTML = ' <s>' + tipFunc(a, r) + ' ';
-    //     return span;
-    //   }
+      //   function crerateTip(a, r) {
+      //     var span = document.createElement('span');
+      //     span.innerHTML = ' <s>' + tipFunc(a, r) + ' ';
+      //     return span;
+      //   }
 
       function createRemoveA(a) {
         var removeA = document.createElement("a");
@@ -1181,7 +1185,7 @@ function wapLoadUserName(callback = null) {
   if (!aTag) return;
   var url = aTag.href;
   var xhr = getXHR();
-  if (xhr===null){
+  if (xhr === null) {
     return;
   }
   xhr({
@@ -1230,7 +1234,7 @@ async function fetchFromCloud(callback) {
   var userKey = await genKey(getUserName());
   // console.log(`gonna fetch for userKey: ${userKey}`);
   var xhr = getXHR();
-  if (xhr===null){
+  if (xhr === null) {
     alert("Browser not support:\n  GM.xmlHttpRequest!");
     return;
   }
@@ -1263,7 +1267,7 @@ async function pushDataToCloud(callback, data, opName) {
   // console.log(data);
 
   var xhr = getXHR();
-  if (xhr===null){
+  if (xhr === null) {
     alert("Browser not support:\n  GM.xmlHttpRequest!");
     return;
   }
