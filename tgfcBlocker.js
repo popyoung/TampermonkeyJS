@@ -4,15 +4,15 @@
 // @version      0.90
 // @license      MIT
 // @description  让讨厌的苍蝇走开！屏蔽指定用户的主帖和回帖，感谢原作者 taxidriver、jun4rui、20060602
-// @author       youngpop
-// @supportURL	 youngpop@163.com
+// @author       popyoung
+// @supportURL	 popyoung@163.com
 // @include      http://*.tgfcer.com/*
 // @include      http://*.tgfcer.net/*
 // @include      https://*.tgfcer.com/*
 // @include      https://*.tgfcer.net/*
 // @grant        GM.xmlHttpRequest
 // @grant        GM_info
-// @updateURL    https://update.greasyfork.org/scripts/15809/TGFC%20ban%20troll.meta.js
+// @updateURL    https://raw.githubusercontent.com/popyoung/TampermonkeyJS/refs/heads/main/tgfcBlocker.js
 // ==/UserScript==
 
 //  console.log('Hello Tgfcer from "tgfc-ban-troll.js".');
