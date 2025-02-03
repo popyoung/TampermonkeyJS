@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TGFC ban troll
 // @namespace    http://club.tgfcer.com/20060602
-// @version      0.91
+// @version      0.92
 // @license      MIT
 // @description  让讨厌的苍蝇走开！屏蔽指定用户的主帖和回帖，感谢原作者 taxidriver、jun4rui、20060602
 // @author       popyoung
@@ -16,7 +16,7 @@
 // ==/UserScript==
 
 //  console.log('Hello Tgfcer from "tgfc-ban-troll.js".');
-"use strict";
+'use strict';
 //	global datas for storage
 var BanList, BanListArray, ShowBanTip, BanTip, BanNegJisao, JisaoMin, BanQuote;
 var CookieName = "TgfcBanTrollData";
@@ -25,7 +25,7 @@ var MenuText = 'TGGM<span style="font-size:.75em">(v' + version() + ')</span>'
 var UserName = null;
 var DownloadSuccessMessage = `数据下载成功，请：\n\n  点击"TGGM"关闭面板，保存到本地；或者\n  (不点"TGGM")刷新页面，继续用本地数据。`;
 var UpDownTitle = "相同用户名的数据，可跨设备、浏览器、域名同步，\n纯手动，每次同步都需要先上传、再下载。\n免费存储服务，服务器数据可能不定期清除。";
-var MagicVersion = "0.90";
+var MagicVersion = "0.92";
 
 function getBanArrayReasonPart(text) {
   if (text.includes(':')) {
@@ -133,15 +133,6 @@ function getLocalStorage(name, defaultValue) {
 
 function postLoad() {
   BanListArray = BanList.split(',');
-  //   //把banListArray内容中:后的部分提取出来变为新的字符串banReasonArray
-  //   var BanReasonArray = [];
-  //   for (var i = 0; i < BanListArray.length; i++) {
-  //     var idx = BanListArray[i].indexOf(':');
-  //     if (idx !== -1) {
-  //       BanReasonArray.push(BanListArray[i].substring(idx + 1));
-  //       BanListArray[i] = BanListArray[i].substring(0, idx);
-  //     }
-  //   }
   JisaoMin = parseInt(localStorage.JisaoMin);
   var idxEmpty = BanListArray.indexOf('');
   if (idxEmpty !== -1) {
@@ -447,8 +438,7 @@ function processWap() {
   if (hasURLPart(ThreadPagePart)) {
     markJiSao();
     if (BanQuote) {
-      filterQuote(BanListArray,
-        function () { return document.getElementsByClassName("quote"); },
+      filterQuote(function () { return document.getElementsByClassName("quote"); },
         function (node) { return node.getElementsByClassName("quote-bd"); },
         function (author, reason) {
           return author +
@@ -622,8 +612,7 @@ function processWeb() {
   }
 
   if (BanQuote) {
-    filterQuote(BanListArray,
-      function () { return document.getElementsByClassName('quote'); },
+    filterQuote(function () { return document.getElementsByClassName('quote'); },
       function (node) { return node.getElementsByTagName('blockquote'); },
       function (author, reason) {
         return author +
@@ -1024,28 +1013,23 @@ function filterBlackList(nodeFunc, citeCount, tipFunc, citeFunc = null) {
 
 }
 
-var BqStart = undefined;
 
-function isQuoteBanned(array, quoteText) {
-  if (BqStart === undefined) {
-    BqStart = {}
-    array.forEach(elem => { BqStart["原帖由 @" + elem.split(':')[0]] = elem.split(':')[0] });
-    array.forEach(elem => { BqStart["原帖由 " + elem.split(':')[0]] = elem.split(':')[0] });
-  }
+//提取quoteText中的用户名，匹配黑名单中的用户和理由
+function getUserAndReason(quoteText) {
+  const regex = /^原帖由 @?(\S+?) 于 20(.|\n|\r)*$/;
+  const user = quoteText.replace(regex, '$1');
 
-  for (var key in BqStart) {
-    if (BqStart.hasOwnProperty(key)) {
-      if (quoteText.startsWith(key)) {
-        return BqStart[key];
-      }
+  for (const element of BanListArray) {
+    // 直接分割原有元素获取前半部分作为键
+    if (element.split(':')[0] === user) {
+      return [user, getBanArrayReasonPart(element)];
     }
   }
-
   return null;
 }
 
-function filterQuote(banListArray, nodeFunc, bqFunc, tipFunc) {
-  var allTextareas, blockquote, author;
+function filterQuote(nodeFunc, bqFunc, tipFunc) {
+  let allTextareas, blockquote;
   allTextareas = nodeFunc();
   // console.log(allTextareas.length);
   if (!allTextareas.length) {
@@ -1060,21 +1044,13 @@ function filterQuote(banListArray, nodeFunc, bqFunc, tipFunc) {
     }
 
     // console.log(blockquote);
-    author = isQuoteBanned(banListArray, blockquote[0].innerText);
-    // console.log("got author: " + author);
-    var inBanList = author !== null;
-    // console.log("inBanList = " + inBanList);
-    if (!inBanList) {
-      continue;
-    }
-
-    //console.log(author);
-    var reason = " (勾选屏蔽)";
-    if (reason !== null) {
+    let result = getUserAndReason(blockquote[0].innerText);
+    if (result) {
+      let [author, reason] = result;
       if (ShowBanTip) {
         var div = document.createElement("div");
         div.appendChild(createReadA());
-        div.appendChild(crerateTip(author, reason));
+        div.appendChild(createTip(author, reason));
         div.appendChild(createRemoveA(author));
         node.prepend(div);
         setDisplay(div.nextSibling, 'none');
@@ -1107,11 +1083,11 @@ function filterQuote(banListArray, nodeFunc, bqFunc, tipFunc) {
         return readA;
       }
 
-      //   function crerateTip(a, r) {
-      //     var span = document.createElement('span');
-      //     span.innerHTML = ' <s>' + tipFunc(a, r) + ' ';
-      //     return span;
-      //   }
+      function createTip(a, r) {
+        var span = document.createElement('span');
+        span.innerHTML = ' <s>' + tipFunc(a, r) + ' ';
+        return span;
+      }
 
       function createRemoveA(a) {
         var removeA = document.createElement("a");
