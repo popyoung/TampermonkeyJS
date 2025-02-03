@@ -1016,7 +1016,7 @@ function filterBlackList(nodeFunc, citeCount, tipFunc, citeFunc = null) {
 
 //提取quoteText中的用户名，匹配黑名单中的用户和理由
 function getUserAndReason(quoteText) {
-  const regex = /^原帖由 @?(\S+?) 于 20(.|\n|\r)*$/;
+  const regex = /^原帖由 @?(\S+?)\s{1,2}于 20(.|\n|\r)*$/;
   const user = quoteText.replace(regex, '$1');
 
   for (const element of BanListArray) {
