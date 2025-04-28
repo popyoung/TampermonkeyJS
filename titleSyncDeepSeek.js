@@ -10,7 +10,7 @@
 
 (function () {
   'use strict';
-  const parentSelector = '.f8d1e4c0 > div:nth-child(1)';
+  const parentSelector = '._765a5cd';
   const targetSelector = '.d8ed659a';
   const maxWaitTime = 5000;
   const pollInterval = 100;
